@@ -2,6 +2,12 @@
 
 A minimal harness demonstrating long-running autonomous coding with the Claude Agent SDK. This demo implements a two-agent pattern (initializer + coding agent) that can build complete applications over multiple sessions.
 
+## Video Walkthrough
+
+[![Watch the video](https://img.youtube.com/vi/YW09hhnVqNM/maxresdefault.jpg)](https://youtu.be/YW09hhnVqNM)
+
+> 🎬 **[Watch the setup and usage guide →](https://youtu.be/YW09hhnVqNM)**
+
 ## Prerequisites
 
 **Required:** Install the latest versions of both Claude Code and the Claude Agent SDK:
@@ -15,6 +21,7 @@ pip install -r requirements.txt
 ```
 
 Verify your installations:
+
 ```bash
 claude --version  # Should be latest version
 pip show claude-code-sdk  # Check SDK is installed
@@ -41,6 +48,7 @@ CLAUDE_CODE_OAUTH_TOKEN=your-oauth-token-here
 ```
 
 **Getting credentials:**
+
 - **API Key:** Get from https://console.anthropic.com/
 - **OAuth Token:** Run `claude setup-token` if using Claude Code CLI authentication
 
@@ -51,6 +59,7 @@ python autonomous_agent_demo.py --project-dir ./my_project
 ```
 
 For testing with limited iterations:
+
 ```bash
 python autonomous_agent_demo.py --project-dir ./my_project --max-iterations 3
 ```
@@ -147,11 +156,11 @@ The application will typically be available at `http://localhost:3000` or simila
 
 ## Command Line Options
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--project-dir` | Directory for the project | `./autonomous_demo_project` |
-| `--max-iterations` | Max agent iterations | Unlimited |
-| `--model` | Claude model to use | `claude-sonnet-4-5-20250929` |
+| Option             | Description               | Default                      |
+| ------------------ | ------------------------- | ---------------------------- |
+| `--project-dir`    | Directory for the project | `./autonomous_demo_project`  |
+| `--max-iterations` | Max agent iterations      | Unlimited                    |
+| `--model`          | Claude model to use       | `claude-sonnet-4-5-20250929` |
 
 ## Customization
 
@@ -205,17 +214,17 @@ When test progress increases, the agent sends a POST request with the following 
 
 ### Payload Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `event` | string | Always `"test_progress"` |
-| `passing` | number | Current number of passing tests |
-| `total` | number | Total number of tests |
-| `percentage` | number | Percentage complete (0-100) |
-| `previous_passing` | number | Passing tests before this update |
-| `tests_completed_this_session` | number | Tests completed since last notification |
-| `completed_tests` | array | Descriptions of newly passing tests |
-| `project` | string | Project name (from `--project-dir` argument) |
-| `timestamp` | string | ISO 8601 timestamp (UTC) |
+| Field                          | Type   | Description                                  |
+| ------------------------------ | ------ | -------------------------------------------- |
+| `event`                        | string | Always `"test_progress"`                     |
+| `passing`                      | number | Current number of passing tests              |
+| `total`                        | number | Total number of tests                        |
+| `percentage`                   | number | Percentage complete (0-100)                  |
+| `previous_passing`             | number | Passing tests before this update             |
+| `tests_completed_this_session` | number | Tests completed since last notification      |
+| `completed_tests`              | array  | Descriptions of newly passing tests          |
+| `project`                      | string | Project name (from `--project-dir` argument) |
+| `timestamp`                    | string | ISO 8601 timestamp (UTC)                     |
 
 ### Notes
 

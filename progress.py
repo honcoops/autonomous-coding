@@ -3,17 +3,17 @@ Progress Tracking Utilities
 ===========================
 
 Functions for tracking and displaying progress of the autonomous coding agent.
-Now uses the Feature API instead of reading feature_list.json directly.
+Uses direct SQLite access for database queries.
 """
 
 import json
 import os
+import sqlite3
 import urllib.request
 from datetime import datetime
 from pathlib import Path
 
 
-API_BASE_URL = "http://localhost:8765"
 WEBHOOK_URL = os.environ.get("PROGRESS_N8N_WEBHOOK_URL")
 PROGRESS_CACHE_FILE = ".progress_cache"
 
@@ -56,43 +56,62 @@ def has_features(project_dir: Path) -> bool:
         return False
 
 
-def _api_get(endpoint: str) -> dict:
-    """
-    Make a GET request to the Feature API.
-
-    Args:
-        endpoint: API endpoint (e.g., "/features/stats")
-
-    Returns:
-        Parsed JSON response
-
-    Raises:
-        Exception if request fails
-    """
-    url = f"{API_BASE_URL}{endpoint}"
-    req = urllib.request.Request(url)
-    with urllib.request.urlopen(req, timeout=5) as response:
-        return json.loads(response.read().decode("utf-8"))
-
-
 def count_passing_tests(project_dir: Path) -> tuple[int, int]:
     """
-    Count passing and total tests via the Feature API.
+    Count passing and total tests via direct database access.
 
     Args:
-        project_dir: Directory containing the project (unused, kept for compatibility)
+        project_dir: Directory containing the project
 
     Returns:
         (passing_count, total_count)
     """
-    try:
-        stats = _api_get("/features/stats")
-        return stats["passing"], stats["total"]
-    except Exception as e:
-        # API not available - might be first run before server starts
-        # Fall back to checking if database exists
-        print(f"[API unavailable in count_passing_tests: {e}]")
+    db_file = project_dir / "features.db"
+    if not db_file.exists():
         return 0, 0
+
+    try:
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM features")
+        total = cursor.fetchone()[0]
+        cursor.execute("SELECT COUNT(*) FROM features WHERE passes = 1")
+        passing = cursor.fetchone()[0]
+        conn.close()
+        return passing, total
+    except Exception as e:
+        print(f"[Database error in count_passing_tests: {e}]")
+        return 0, 0
+
+
+def get_all_passing_features(project_dir: Path) -> list[dict]:
+    """
+    Get all passing features for webhook notifications.
+
+    Args:
+        project_dir: Directory containing the project
+
+    Returns:
+        List of dicts with id, category, name for each passing feature
+    """
+    db_file = project_dir / "features.db"
+    if not db_file.exists():
+        return []
+
+    try:
+        conn = sqlite3.connect(db_file)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, category, name FROM features WHERE passes = 1 ORDER BY priority ASC"
+        )
+        features = [
+            {"id": row[0], "category": row[1], "name": row[2]}
+            for row in cursor.fetchall()
+        ]
+        conn.close()
+        return features
+    except Exception:
+        return []
 
 
 def send_progress_webhook(passing: int, total: int, project_dir: Path) -> None:
@@ -123,23 +142,20 @@ def send_progress_webhook(passing: int, total: int, project_dir: Path) -> None:
         # In this case, we can't reliably identify which specific tests are new
         is_old_cache_format = len(previous_passing_ids) == 0 and previous > 0
 
-        try:
-            # Get all passing features (uses internal endpoint without 5-feature cap)
-            data = _api_get("/features/all-passing")
-            for feature in data.get("features", []):
-                feature_id = feature.get("id")
-                current_passing_ids.append(feature_id)
-                # Only identify individual new tests if we have previous IDs to compare
-                if not is_old_cache_format and feature_id not in previous_passing_ids:
-                    # This feature is newly passing
-                    name = feature.get("name", f"Feature #{feature_id}")
-                    category = feature.get("category", "")
-                    if category:
-                        completed_tests.append(f"{category} {name}")
-                    else:
-                        completed_tests.append(name)
-        except Exception as e:
-            print(f"[API error getting features: {e}]")
+        # Get all passing features via direct database access
+        all_passing = get_all_passing_features(project_dir)
+        for feature in all_passing:
+            feature_id = feature.get("id")
+            current_passing_ids.append(feature_id)
+            # Only identify individual new tests if we have previous IDs to compare
+            if not is_old_cache_format and feature_id not in previous_passing_ids:
+                # This feature is newly passing
+                name = feature.get("name", f"Feature #{feature_id}")
+                category = feature.get("category", "")
+                if category:
+                    completed_tests.append(f"{category} {name}")
+                else:
+                    completed_tests.append(name)
 
         payload = {
             "event": "test_progress",
@@ -170,13 +186,8 @@ def send_progress_webhook(passing: int, total: int, project_dir: Path) -> None:
     else:
         # Update cache even if no change (for initial state)
         if not cache_file.exists():
-            current_passing_ids = []
-            try:
-                data = _api_get("/features/all-passing")
-                for feature in data.get("features", []):
-                    current_passing_ids.append(feature.get("id"))
-            except Exception:
-                pass
+            all_passing = get_all_passing_features(project_dir)
+            current_passing_ids = [f.get("id") for f in all_passing]
             cache_file.write_text(
                 json.dumps({"count": passing, "passing_ids": current_passing_ids})
             )

@@ -9,42 +9,38 @@ Start by reading `app_spec.txt` in your working directory. This file contains
 the complete specification for what you need to build. Read it carefully
 before proceeding.
 
-### CRITICAL FIRST TASK: Create Features via API
+### CRITICAL FIRST TASK: Create Features
 
-Based on `app_spec.txt`, create features using the Feature API. The API stores features in a SQLite database,
+Based on `app_spec.txt`, create features using the feature_create_bulk tool. The features are stored in a SQLite database,
 which is the single source of truth for what needs to be built.
 
 **Creating Features:**
 
-Use the bulk create endpoint to add all features at once:
+Use the feature_create_bulk tool to add all features at once:
 
-```bash
-curl -X POST http://localhost:8765/features/bulk \
-  -H "Content-Type: application/json" \
-  -d '{
-    "features": [
-      {
-        "category": "functional",
-        "name": "Brief feature name",
-        "description": "Brief description of the feature and what this test verifies",
-        "steps": [
-          "Step 1: Navigate to relevant page",
-          "Step 2: Perform action",
-          "Step 3: Verify expected result"
-        ]
-      },
-      {
-        "category": "style",
-        "name": "Brief feature name",
-        "description": "Brief description of UI/UX requirement",
-        "steps": [
-          "Step 1: Navigate to page",
-          "Step 2: Take screenshot",
-          "Step 3: Verify visual requirements"
-        ]
-      }
+```
+Use the feature_create_bulk tool with features=[
+  {
+    "category": "functional",
+    "name": "Brief feature name",
+    "description": "Brief description of the feature and what this test verifies",
+    "steps": [
+      "Step 1: Navigate to relevant page",
+      "Step 2: Perform action",
+      "Step 3: Verify expected result"
     ]
-  }'
+  },
+  {
+    "category": "style",
+    "name": "Brief feature name",
+    "description": "Brief description of UI/UX requirement",
+    "steps": [
+      "Step 1: Navigate to page",
+      "Step 2: Take screenshot",
+      "Step 3: Verify visual requirements"
+    ]
+  }
+]
 ```
 
 **Notes:**
@@ -54,7 +50,7 @@ curl -X POST http://localhost:8765/features/bulk \
 
 **Requirements for features:**
 
-- Feature count must match the `feature_count` specified in app_spec.txt (currently 190)
+- Feature count must match the `feature_count` specified in app_spec.txt (currently 25)
 - Reference tiers for other projects:
   - **Simple apps**: ~150 tests
   - **Medium apps**: ~250 tests
@@ -453,7 +449,7 @@ The feature_list.json must include tests that **actively verify real data** and 
 
 **CRITICAL INSTRUCTION:**
 IT IS CATASTROPHIC TO REMOVE OR EDIT FEATURES IN FUTURE SESSIONS.
-Features can ONLY be marked as passing (via `PATCH /features/{id}` with `{"passes": true}`).
+Features can ONLY be marked as passing (via the `feature_mark_passing` tool with the feature_id).
 Never remove features, never edit descriptions, never modify testing steps.
 This ensures no functionality is missed.
 
@@ -491,13 +487,13 @@ components mentioned in the spec.
 If you have time remaining in this session, you may begin implementing
 the highest-priority features. Get the next feature with:
 
-```bash
-curl -s http://localhost:8765/features/next
+```
+Use the feature_get_next tool
 ```
 
 Remember:
 - Work on ONE feature at a time
-- Test thoroughly before marking as passing via API
+- Test thoroughly before marking as passing
 - Commit your progress before session ends
 
 ### ENDING THIS SESSION
@@ -506,7 +502,7 @@ Before your context fills up:
 
 1. Commit all work with descriptive messages
 2. Create `claude-progress.txt` with a summary of what you accomplished
-3. Verify features were created via API: `curl -s http://localhost:8765/features/stats`
+3. Verify features were created using the feature_get_stats tool
 4. Leave the environment in a clean, working state
 
 The next agent will continue from here with a fresh context window.

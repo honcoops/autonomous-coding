@@ -17,17 +17,21 @@ ls -la
 # 3. Read the project specification to understand what you're building
 cat app_spec.txt
 
-# 4. Get progress statistics (passing/total counts)
-curl -s http://localhost:8765/features/stats
-
-# 5. Read progress notes from previous sessions
+# 4. Read progress notes from previous sessions
 cat claude-progress.txt
 
-# 6. Check recent git history
+# 5. Check recent git history
 git log --oneline -20
+```
+
+Then use MCP tools to check feature status:
+
+```
+# 6. Get progress statistics (passing/total counts)
+Use the feature_get_stats tool
 
 # 7. Get the next feature to work on
-curl -s http://localhost:8765/features/next
+Use the feature_get_next tool
 ```
 
 Understanding the `app_spec.txt` is critical - it contains the full requirements
@@ -56,8 +60,8 @@ new, you MUST run verification tests.
 Run 1-2 of the features marked as passing that are most core to the app's functionality to verify they still work.
 
 To get passing features for regression testing:
-```bash
-curl -s "http://localhost:8765/features?passes=true&limit=3&random=true"
+```
+Use the feature_get_for_regression tool (returns up to 3 random passing features)
 ```
 For example, if this were a chat app, you should perform a test that logs into the app, sends a message, and gets a response.
 
@@ -77,11 +81,11 @@ For example, if this were a chat app, you should perform a test that logs into t
 
 ### STEP 4: CHOOSE ONE FEATURE TO IMPLEMENT
 
-Get the next feature to implement from the API:
+Get the next feature to implement:
 
-```bash
+```
 # Get the highest-priority pending feature
-curl -s http://localhost:8765/features/next
+Use the feature_get_next tool
 ```
 
 Focus on completing one feature perfectly and completing its testing steps in this session before moving on to other features.
@@ -97,12 +101,12 @@ Sometimes a feature cannot be implemented yet. Valid reasons to skip:
 
 If you encounter a blocker, **skip the feature** to move it to the end of the queue:
 
-```bash
+```
 # Skip feature #42 - moves it to end of priority queue
-curl -X POST http://localhost:8765/features/42/skip
+Use the feature_skip tool with feature_id=42
 ```
 
-After skipping, call `/features/next` again to get the next feature to work on.
+After skipping, use the feature_get_next tool again to get the next feature to work on.
 
 **Do NOT skip features just because they seem difficult.** Only skip when there is a genuine dependency or blocker. Document why you skipped in `claude-progress.txt`.
 
@@ -222,13 +226,11 @@ For API endpoints used by this feature:
 
 **YOU CAN ONLY MODIFY ONE FIELD: "passes"**
 
-After thorough verification, mark the feature as passing via the API:
+After thorough verification, mark the feature as passing:
 
-```bash
+```
 # Mark feature #42 as passing (replace 42 with the actual feature ID)
-curl -X PATCH http://localhost:8765/features/42 \
-  -H "Content-Type: application/json" \
-  -d '{"passes": true}'
+Use the feature_mark_passing tool with feature_id=42
 ```
 
 **NEVER:**
@@ -251,7 +253,7 @@ git commit -m "Implement [feature name] - verified end-to-end
 
 - Added [specific changes]
 - Tested with browser automation
-- Marked feature #X as passing via API
+- Marked feature #X as passing
 - Screenshots in verification/ directory
 "
 ```
@@ -272,7 +274,7 @@ Before context fills up:
 
 1. Commit all working code
 2. Update claude-progress.txt
-3. Mark features as passing via API if tests verified
+3. Mark features as passing if tests verified
 4. Ensure no uncommitted changes
 5. Leave app in working state (no broken features)
 
@@ -321,39 +323,36 @@ Test like a human user with mouse and keyboard. Don't take shortcuts by using Ja
 
 ---
 
-## API USAGE RULES (CRITICAL - DO NOT VIOLATE)
+## FEATURE TOOL USAGE RULES (CRITICAL - DO NOT VIOLATE)
 
-The Feature API exists to reduce token usage. **DO NOT make exploratory queries.**
+The feature tools exist to reduce token usage. **DO NOT make exploratory queries.**
 
-### ALLOWED API Calls (ONLY these):
+### ALLOWED Feature Tools (ONLY these):
 
-```bash
-# 1. Get progress stats
-curl -s http://localhost:8765/features/stats
+```
+# 1. Get progress stats (passing/total counts)
+feature_get_stats
 
 # 2. Get the NEXT feature to work on (one feature only)
-curl -s http://localhost:8765/features/next
+feature_get_next
 
 # 3. Get up to 3 random passing features for regression testing
-curl -s "http://localhost:8765/features?passes=true&limit=3&random=true"
+feature_get_for_regression
 
-# 4. Mark a feature as passing
-curl -X PATCH http://localhost:8765/features/{id} \
-  -H "Content-Type: application/json" \
-  -d '{"passes": true}'
+# 4. Mark a feature as passing (after verification)
+feature_mark_passing with feature_id={id}
 
 # 5. Skip a feature (moves to end of queue) - ONLY when blocked by dependency
-curl -X POST http://localhost:8765/features/{id}/skip
+feature_skip with feature_id={id}
 ```
 
-### FORBIDDEN API Calls (NEVER do these):
+### RULES:
 
-- `curl .../features?limit=20` - Do NOT fetch lists of features
-- `curl .../features?limit=50` - Do NOT browse the feature catalog
-- `curl .../features?category=...` - Do NOT query by category
-- `curl .../features?passes=false&limit=...` - Do NOT list pending features
+- Do NOT try to fetch lists of all features
+- Do NOT query features by category
+- Do NOT list all pending features
 
-**You do NOT need to see all features.** The `/features/next` endpoint tells you exactly what to work on. Trust it.
+**You do NOT need to see all features.** The feature_get_next tool tells you exactly what to work on. Trust it.
 
 ---
 

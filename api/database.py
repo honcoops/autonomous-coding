@@ -48,9 +48,12 @@ def get_database_path(project_dir: Path) -> Path:
 
 
 def get_database_url(project_dir: Path) -> str:
-    """Return the SQLAlchemy database URL for a project."""
+    """Return the SQLAlchemy database URL for a project.
+
+    Uses POSIX-style paths (forward slashes) for cross-platform compatibility.
+    """
     db_path = get_database_path(project_dir)
-    return f"sqlite:///{db_path}"
+    return f"sqlite:///{db_path.as_posix()}"
 
 
 def create_database(project_dir: Path) -> tuple:

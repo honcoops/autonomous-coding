@@ -7,6 +7,7 @@ Functions for creating and configuring the Claude Agent SDK client.
 
 import json
 import os
+import sys
 from pathlib import Path
 
 from claude_agent_sdk import ClaudeAgentOptions, ClaudeSDKClient
@@ -14,6 +15,16 @@ from claude_agent_sdk.types import HookMatcher
 
 from security import bash_security_hook
 
+
+# Feature MCP tools for feature/test management
+FEATURE_MCP_TOOLS = [
+    "mcp__features__feature_get_stats",
+    "mcp__features__feature_get_next",
+    "mcp__features__feature_get_for_regression",
+    "mcp__features__feature_mark_passing",
+    "mcp__features__feature_skip",
+    "mcp__features__feature_create_bulk",
+]
 
 # Playwright MCP tools for browser automation
 PLAYWRIGHT_TOOLS = [
@@ -103,6 +114,8 @@ def create_client(project_dir: Path, model: str):
                 "Bash(*)",
                 # Allow Playwright MCP tools for browser automation
                 *PLAYWRIGHT_TOOLS,
+                # Allow Feature MCP tools for feature management
+                *FEATURE_MCP_TOOLS,
             ],
         },
     }
@@ -119,7 +132,7 @@ def create_client(project_dir: Path, model: str):
     print("   - Sandbox enabled (OS-level bash isolation)")
     print(f"   - Filesystem restricted to: {project_dir.resolve()}")
     print("   - Bash commands restricted to allowlist (see security.py)")
-    print("   - MCP servers: playwright (browser automation)")
+    print("   - MCP servers: playwright (browser), features (database)")
     print("   - Project settings enabled (skills, commands, CLAUDE.md)")
     print()
 
@@ -132,9 +145,18 @@ def create_client(project_dir: Path, model: str):
             allowed_tools=[
                 *BUILTIN_TOOLS,
                 *PLAYWRIGHT_TOOLS,
+                *FEATURE_MCP_TOOLS,
             ],
             mcp_servers={
                 "playwright": {"command": "npx", "args": ["@playwright/mcp@latest", "--viewport-size", "1280x720"]},
+                "features": {
+                    "command": sys.executable,  # Use the same Python that's running this script
+                    "args": ["-m", "mcp_server.feature_mcp"],
+                    "env": {
+                        "PROJECT_DIR": str(project_dir.resolve()),
+                        "PYTHONPATH": str(Path(__file__).parent.resolve()),
+                    },
+                },
             },
             hooks={
                 "PreToolUse": [

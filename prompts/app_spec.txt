@@ -1,904 +1,206 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project_specification>
-  <project_name>Business Finder</project_name>
+  <project_name>Simple Todo</project_name>
 
   <overview>
-    Business Finder is a global business directory application where users can discover businesses through powerful PostgreSQL full-text search, category browsing, or location-based discovery. Signed-in users can add businesses, write reviews, save favorites, and RSVP to events. Business owners can claim listings, view comprehensive analytics, and respond to reviews (when verified). Platform administrators manage users, verify businesses, and moderate content. The platform supports country-based filtering with automatic detection via IP/browser geolocation. The app features a clean, minimal design inspired by Airbnb with light/dark mode support.
+    A minimal personal Kanban board for tracking to-do items. Features three columns (To Do, In Progress, Done) with drag-and-drop functionality to move cards between statuses. Single-user app with browser localStorage for persistence.
   </overview>
-
-  <boilerplate_cleanup>
-    <description>This project starts from an existing boilerplate that includes Next.js 16, Better Auth, and Drizzle ORM.</description>
-    <remove>
-      - AI SDK package and all AI-related dependencies
-      - OpenRouter package and configuration
-      - Chat page/components and any AI chat functionality
-      - Any AI-related API routes
-      - Unused boilerplate components (setup-checklist, starter-prompt-modal, diagnostics)
-    </remove>
-    <replace>
-      - Boilerplate branding with "Business Finder" branding
-      - Boilerplate home page with discovery-focused homepage
-      - Boilerplate header with new navigation structure
-      - Boilerplate footer with country selector and new links
-    </replace>
-  </boilerplate_cleanup>
 
   <technology_stack>
     <frontend>
-      <framework>Next.js 16 with React 19</framework>
-      <language>TypeScript</language>
-      <styling>TailwindCSS with shadcn/ui components</styling>
-      <icons>Lucide React</icons>
-      <charts>Recharts (for analytics dashboards)</charts>
-      <maps>Leaflet with React-Leaflet and OpenStreetMap (free, no API keys)</maps>
-      <notifications>Sonner (toasts) + custom in-app notification system</notifications>
-      <theming>next-themes (light/dark mode with user toggle)</theming>
+      <framework>React</framework>
+      <styling>Tailwind CSS</styling>
+      <build_tool>Vite</build_tool>
     </frontend>
     <backend>
-      <runtime>Node.js with Next.js Server Actions and API routes</runtime>
-      <database>PostgreSQL running in Docker container</database>
-      <orm>Drizzle ORM</orm>
-      <search>PostgreSQL full-text search with tsvector and materialized views</search>
-      <validation>Zod</validation>
+      <runtime>None - client-side only</runtime>
+      <database>Browser localStorage</database>
     </backend>
-    <authentication>
-      <provider>Better Auth</provider>
-      <method>Email and password only (no social login)</method>
-    </authentication>
+    <communication>
+      <api>None - all data stored locally</api>
+    </communication>
   </technology_stack>
 
-  <design_system>
-    <style>Clean minimal design inspired by Airbnb</style>
-    <layout>Minimal fixed header, full-width content, footer with country selector</layout>
-    <color_palette>
-      <primary>Blue tones for trust and professionalism</primary>
-      <secondary>Warm accent for CTAs</secondary>
-      <success>Green</success>
-      <warning>Amber</warning>
-      <error>Red</error>
-      <neutral>Grays for text and backgrounds</neutral>
-    </color_palette>
-    <typography>
-      - Clean sans-serif font (system fonts or Inter)
-      - Clear hierarchy with distinct heading sizes
-      - Readable body text (16px base)
-    </typography>
-    <dark_mode>Full support with user toggle and preference persistence</dark_mode>
-    <responsive>Mobile-first, fully responsive design</responsive>
-  </design_system>
+  <prerequisites>
+    <environment_setup>
+      Node.js 18+ installed
+    </environment_setup>
+  </prerequisites>
 
-  <feature_count>190</feature_count>
+  <feature_count>25</feature_count>
 
   <security_and_access_control>
     <user_roles>
-      <role name="anonymous">
-        <description>Visitors without an account</description>
-        <permissions>
-          - Browse and search businesses
-          - View business details, reviews, events
-          - View promotions
-          - Cannot add businesses, reviews, or favorites
-        </permissions>
-      </role>
       <role name="user">
-        <description>Default role for all registered users</description>
         <permissions>
-          - All anonymous permissions
-          - Add new business listings
-          - Write one review per business (can edit/delete own)
-          - Add/remove favorites
-          - RSVP to events
-          - View recently viewed businesses
-          - Report inappropriate content
-          - Access user dashboard
-          - Claim business ownership (pending admin approval)
+          - Full access to all features (single-user app)
         </permissions>
         <protected_routes>
-          - /dashboard/*
-          - /favorites
-          - /my-reviews
-        </protected_routes>
-      </role>
-      <role name="business_owner">
-        <description>Users who have claimed businesses (mode within user role, not separate role)</description>
-        <permissions>
-          - All user permissions
-          - Switch to business owner mode
-          - View analytics for owned businesses (impressions, views, clicks, trends over time)
-          - Create/edit/delete events for owned businesses
-          - Create/edit/delete promotions for owned businesses
-          - Respond to reviews (only if business is VERIFIED)
-          - Access business owner dashboard
-        </permissions>
-        <protected_routes>
-          - /business-dashboard/*
-        </protected_routes>
-      </role>
-      <role name="admin">
-        <description>Platform administrators (platform_role = 'admin' in users table)</description>
-        <permissions>
-          - All user permissions
-          - Access admin dashboard
-          - View all users (searchable)
-          - View all businesses (searchable)
-          - Approve/reject business claim requests
-          - Verify/unverify businesses (adds verified badge)
-          - Resolve content reports
-          - View platform statistics
-        </permissions>
-        <protected_routes>
-          - /admin/*
+          - None (no authentication required)
         </protected_routes>
       </role>
     </user_roles>
     <authentication>
-      <method>Email and password via Better Auth</method>
-      <social_login>None (email only)</social_login>
+      <method>None - single user, no login required</method>
+      <session_timeout>None</session_timeout>
+      <password_requirements>N/A</password_requirements>
     </authentication>
-    <platform_role_implementation>
-      <description>Add platform_role column to users table</description>
-      <values>null or 'user' (default), 'admin' for admins</values>
-      <note>Business owner mode is determined by having claimed businesses, not a separate role. Manually edit database to set admin role.</note>
-    </platform_role_implementation>
-    <business_claiming>
-      <process>Request + Admin Approval</process>
-      <flow>
-        1. Signed-in user clicks "Claim this business"
-        2. Claim request created with status "pending"
-        3. Admin reviews in admin dashboard
-        4. Admin approves or rejects
-        5. If approved, user becomes owner of that listing
-        6. Business can then be verified separately by admin
-      </flow>
-    </business_claiming>
-    <verification>
-      <process>Manual process outside platform</process>
-      <description>Business owners contact support, admin manually sets verified status</description>
-      <display>Verified badge shown next to verified businesses</display>
-      <review_responses>Only verified business owners can respond to reviews</review_responses>
-    </verification>
-    <review_limits>One review per user per business (can edit existing)</review_limits>
-    <deletion_policy>Hard delete - permanently removed along with related data</deletion_policy>
+    <sensitive_operations>
+      - None
+    </sensitive_operations>
   </security_and_access_control>
 
   <core_features>
-    <boilerplate_cleanup priority="1">
-      - Remove AI SDK dependencies (ai, @ai-sdk/react, @openrouter/ai-sdk-provider)
-      - Remove OpenRouter configuration and environment variables
-      - Remove chat page (/chat) and API route (/api/chat)
-      - Remove AI-related components
-      - Update all branding from boilerplate to 'Business Finder'
-      - Remove unused components (setup-checklist, starter-prompt-modal, diagnostics)
-      - Clean up package.json and remove unused dependencies
-    </boilerplate_cleanup>
-
-    <branding_and_layout priority="2">
-      - New header component with logo, search bar, user menu
-      - New footer component with country selector, links, copyright
-      - Light/dark mode toggle with persistence
-      - Clean minimal Airbnb-style layout
-      - Responsive mobile navigation (hamburger menu)
-    </branding_and_layout>
-
-    <categories priority="3">
-      - Two-level category hierarchy (parent > child)
-      - Categories table with name, slug, icon, parent_id
-      - Seed database with common business categories
-      - Category grid display on browse page
-      - Category selection when adding businesses
-    </categories>
-
-    <business_listings priority="4">
-      - Full business detail page
-      - Business name, description, address
-      - Full contact info (phone, email, website, social media links)
-      - Operating hours (full schedule for each day, holiday hours)
-      - Business photos (multiple, with primary photo)
-      - Location on map (Leaflet + OpenStreetMap)
-      - Category assignment (2-level)
-      - Verified badge for verified businesses
-      - Claimed status indicator
-      - Add new business (signed-in users)
-      - Edit business (owner or creator)
-      - Delete business (owner or admin) - hard delete
-      - Upload business photos
-      - Social sharing buttons (Facebook, Twitter/X, WhatsApp, copy link)
-    </business_listings>
-
-    <search_and_discovery priority="5">
-      - Homepage focused on discoverability
-      - Prominent search bar
-      - PostgreSQL full-text search with tsvector and materialized views
-      - Semantic/relevance-based results sorted by relevance score
-      - Search results page with list/grid view
-      - Map view with markers (Leaflet + OpenStreetMap)
-      - Filter by category
-      - Filter by country
-      - Filter by distance (nearby)
-      - Sort options (relevance, rating, distance)
-      - Featured/highlighted local businesses on homepage
-      - Businesses with good reviews showcased
-      - Upcoming events section on homepage
-      - Browse by category page
-    </search_and_discovery>
-
-    <geolocation priority="6">
-      - Browser Geolocation API for user location
-      - IP-based country detection for default country
-      - Calculate distance between user and businesses
-      - Distance display from user location
-      - "Near me" functionality
-      - Country selector in footer
-      - Country persistence in localStorage
-    </geolocation>
-
-    <reviews_system priority="7">
-      - 5-star rating system
-      - Review text content
-      - Review photos (multiple per review)
-      - One review per user per business (enforced)
-      - Edit own review
-      - Delete own review
-      - Review responses from verified business owners only
-      - Reviews displayed with user info and date
-      - Average rating calculation and display
-      - Report inappropriate reviews
-    </reviews_system>
-
-    <favorites priority="8">
-      - Add business to favorites
-      - Remove from favorites
-      - View all favorites in user dashboard
-      - Favorite count display on business cards
-    </favorites>
-
-    <events_system priority="9">
-      - Events listed on business page
-      - Dedicated events page (all upcoming events in area)
-      - Event categories (Live Music, Market, Workshop, etc.)
-      - Event title, description, date/time
-      - Optional RSVP requirement
-      - RSVP button and count display
-      - User can view their RSVPs
-      - Cancel RSVP
-      - Create event (business owner)
-      - Edit event (business owner)
-      - Delete event (business owner)
-      - Filter events by date
-      - Filter events by category
-      - Filter events by location/distance
-    </events_system>
-
-    <promotions priority="10">
-      - View active promotions on business page
-      - Promotion title and description
-      - Validity dates (valid_from, valid_until)
-      - Create promotion (business owner)
-      - Edit promotion (business owner)
-      - Delete promotion (business owner)
-    </promotions>
-
-    <user_dashboard priority="11">
-      - Dashboard layout with navigation
-      - View all my reviews (edit/delete)
-      - View all favorites
-      - Recently viewed businesses
-      - My RSVPs list
-      - In-app notifications center
-    </user_dashboard>
-
-    <business_owner_dashboard priority="12">
-      - Toggle between normal mode and business owner mode
-      - View all owned/claimed listings
-      - Comprehensive analytics:
-        - Impressions over time
-        - Views over time
-        - Click data
-        - Review trends
-        - Time period comparison
-      - Recent reviews widget
-      - Respond to reviews (verified businesses only)
-      - Manage events for businesses
-      - Manage promotions for businesses
-    </business_owner_dashboard>
-
-    <admin_dashboard priority="13">
-      - Admin dashboard layout with sidebar
-      - Platform statistics overview
-      - View all users (searchable)
-      - View user details
-      - View all businesses (searchable)
-      - Verify business (toggle verified badge)
-      - Remove verification
-      - View pending claim requests
-      - Approve/reject claims
-      - View reports queue
-      - Resolve/dismiss reports
-      - Admin-only route protection
-    </admin_dashboard>
-
-    <notifications_system priority="14">
-      - In-app notification center (no email)
-      - Notification bell with unread count
-      - Mark as read
-      - Mark all as read
-      - Click notification to navigate
-      - Notification types: new review, claim status, RSVP confirmation
-      - Delete notification
-    </notifications_system>
-
-    <reporting priority="15">
-      - Report inappropriate review
-      - Report inappropriate business listing
-      - Report reason selection
-      - Admin report queue
-      - Resolve/dismiss reports
-    </reporting>
-
-    <ui_features priority="16">
-      - Light/dark mode toggle with persistence
-      - Responsive design (desktop, tablet, mobile)
-      - Loading states for async operations
-      - Error states with user-friendly messages
-      - Empty states when no data
-      - Toast notifications for actions (Sonner)
-      - Modal dialogs for confirmations
-      - Form validation with field-level errors
-      - Image upload with preview
-      - Infinite scroll/pagination
-      - Mobile navigation menu
-    </ui_features>
+    <board_display>
+      - Display Kanban board with three columns: To Do, In Progress, Done
+      - Each column shows its cards vertically
+      - Empty columns show placeholder text
+      - Board fills available viewport
+    </board_display>
+    <card_management>
+      - Add new card with title to any column (defaults to To Do)
+      - Edit existing card title inline
+      - Delete card with confirmation
+      - Cards display their title
+    </card_management>
+    <drag_and_drop>
+      - Drag cards between columns to change status
+      - Visual feedback during drag (card follows cursor)
+      - Drop zone highlighting when dragging over columns
+      - Card order preserved within columns
+    </drag_and_drop>
+    <persistence>
+      - All cards saved to localStorage automatically
+      - Cards restored from localStorage on page load
+      - Changes persist across browser sessions
+    </persistence>
   </core_features>
 
   <database_schema>
-    <notes>
-      - All custom tables use UUID for primary keys
-      - Better Auth tables use text type for IDs (do not modify)
-      - Timestamps use timestamptz
-    </notes>
-
     <tables>
-      <users>
-        - Extended from Better Auth user table
-        - platform_role: text (null, 'user', or 'admin')
-        - avatar_url: text
-      </users>
-
-      <countries>
-        - id: uuid
-        - name: text
-        - code: text (ISO country code)
-        - flag_emoji: text
-      </countries>
-
-      <categories>
-        - id: uuid
-        - name: text
-        - slug: text (unique)
-        - parent_id: uuid (nullable, references categories for 2-level hierarchy)
-        - icon: text (lucide icon name)
-        - display_order: integer
-        - created_at: timestamptz
-      </categories>
-
-      <businesses>
-        - id: uuid
-        - name: text
-        - slug: text (unique)
-        - description: text
-        - address: text
-        - city: text
-        - state_province: text
-        - postal_code: text
-        - latitude: decimal
-        - longitude: decimal
-        - phone: text
-        - email: text
-        - website: text
-        - social_links: jsonb (facebook, twitter, instagram, etc.)
-        - country_id: uuid (references countries)
-        - category_id: uuid (references categories)
-        - owner_id: text (references users, nullable - set when claimed)
-        - created_by: text (references users)
-        - is_verified: boolean (default false)
-        - is_claimed: boolean (default false)
-        - search_vector: tsvector
-        - created_at: timestamptz
-        - updated_at: timestamptz
-      </businesses>
-
-      <business_hours>
-        - id: uuid
-        - business_id: uuid (references businesses)
-        - day_of_week: integer (0-6, Sunday-Saturday)
-        - open_time: time
-        - close_time: time
-        - is_closed: boolean
-      </business_hours>
-
-      <business_photos>
-        - id: uuid
-        - business_id: uuid (references businesses)
-        - url: text
-        - caption: text
-        - is_primary: boolean
-        - uploaded_by: text (references users)
-        - created_at: timestamptz
-      </business_photos>
-
-      <reviews>
-        - id: uuid
-        - business_id: uuid (references businesses)
-        - user_id: text (references users)
-        - rating: integer (1-5)
-        - text: text
-        - created_at: timestamptz
-        - updated_at: timestamptz
-        - UNIQUE constraint on (business_id, user_id)
-      </reviews>
-
-      <review_photos>
-        - id: uuid
-        - review_id: uuid (references reviews)
-        - url: text
-        - created_at: timestamptz
-      </review_photos>
-
-      <review_responses>
-        - id: uuid
-        - review_id: uuid (references reviews, unique - one response per review)
-        - business_id: uuid (references businesses)
-        - responder_id: text (references users)
-        - text: text
-        - created_at: timestamptz
-        - updated_at: timestamptz
-      </review_responses>
-
-      <favorites>
-        - id: uuid
-        - user_id: text (references users)
-        - business_id: uuid (references businesses)
-        - created_at: timestamptz
-        - UNIQUE constraint on (user_id, business_id)
-      </favorites>
-
-      <event_categories>
-        - id: uuid
-        - name: text
-        - slug: text (unique)
-        - icon: text
-      </event_categories>
-
-      <events>
-        - id: uuid
-        - business_id: uuid (references businesses)
-        - title: text
-        - description: text
-        - event_category_id: uuid (references event_categories)
-        - start_datetime: timestamptz
-        - end_datetime: timestamptz
-        - requires_rsvp: boolean (default false)
-        - created_at: timestamptz
-        - updated_at: timestamptz
-      </events>
-
-      <event_rsvps>
-        - id: uuid
-        - event_id: uuid (references events)
-        - user_id: text (references users)
-        - created_at: timestamptz
-        - UNIQUE constraint on (event_id, user_id)
-      </event_rsvps>
-
-      <business_claims>
-        - id: uuid
-        - business_id: uuid (references businesses)
-        - user_id: text (references users)
-        - status: text ('pending', 'approved', 'rejected')
-        - created_at: timestamptz
-        - reviewed_at: timestamptz
-        - reviewed_by: text (references users, nullable)
-      </business_claims>
-
-      <promotions>
-        - id: uuid
-        - business_id: uuid (references businesses)
-        - title: text
-        - description: text
-        - valid_from: timestamptz
-        - valid_until: timestamptz
-        - created_at: timestamptz
-        - updated_at: timestamptz
-      </promotions>
-
-      <business_views>
-        - id: uuid
-        - business_id: uuid (references businesses)
-        - user_id: text (references users, nullable for anonymous)
-        - viewed_at: timestamptz
-        - source: text ('search', 'browse', 'direct', 'event')
-      </business_views>
-
-      <notifications>
-        - id: uuid
-        - user_id: text (references users)
-        - type: text ('review', 'claim_approved', 'claim_rejected', 'rsvp', etc.)
-        - title: text
-        - message: text
-        - data: jsonb (additional context like business_id, review_id)
-        - is_read: boolean (default false)
-        - created_at: timestamptz
-      </notifications>
-
-      <reports>
-        - id: uuid
-        - reporter_id: text (references users)
-        - reportable_type: text ('business', 'review')
-        - reportable_id: uuid
-        - reason: text
-        - status: text ('pending', 'resolved', 'dismissed')
-        - resolved_by: text (references users, nullable)
-        - resolved_at: timestamptz
-        - created_at: timestamptz
-      </reports>
-
-      <recently_viewed>
-        - id: uuid
-        - user_id: text (references users)
-        - business_id: uuid (references businesses)
-        - viewed_at: timestamptz
-        - UNIQUE constraint on (user_id, business_id) with upsert on conflict
-      </recently_viewed>
-
-      <business_search_index>
-        - Materialized view for full-text search
-        - business_id: uuid
-        - search_vector: tsvector (name, description, category, address)
-        - Refreshed on business create/update
-      </business_search_index>
+      <localStorage_structure>
+        - Key: "simple-todo-cards"
+        - Value: JSON array of card objects
+        - Card object: { id, title, status, order }
+        - Status values: "todo", "in-progress", "done"
+      </localStorage_structure>
     </tables>
-
-    <indexes>
-      - businesses: search_vector (GIN index for full-text search)
-      - businesses: (latitude, longitude) for location queries
-      - businesses: country_id for country filtering
-      - business_views: (business_id, viewed_at) for time-series analytics
-      - reviews: business_id for review lookups
-      - events: (business_id, start_datetime) for event queries
-      - notifications: (user_id, is_read) for unread counts
-    </indexes>
   </database_schema>
 
   <api_endpoints_summary>
-    <note>Using Next.js Server Actions for most mutations. API routes for complex queries.</note>
-
-    <auth>
-      - Better Auth handles: /api/auth/*
-    </auth>
-
-    <businesses>
-      - GET /api/businesses (list with filters, search, pagination)
-      - GET /api/businesses/[slug] (detail)
-      - GET /api/businesses/nearby (geolocation query)
-      - Server Action: createBusiness
-      - Server Action: updateBusiness
-      - Server Action: deleteBusiness
-      - Server Action: claimBusiness
-    </businesses>
-
-    <reviews>
-      - GET /api/businesses/[slug]/reviews
-      - Server Action: createReview
-      - Server Action: updateReview
-      - Server Action: deleteReview
-      - Server Action: respondToReview
-    </reviews>
-
-    <events>
-      - GET /api/events (list with filters)
-      - GET /api/businesses/[slug]/events
-      - Server Action: createEvent
-      - Server Action: updateEvent
-      - Server Action: deleteEvent
-      - Server Action: rsvpToEvent
-      - Server Action: cancelRsvp
-    </events>
-
-    <favorites>
-      - Server Action: addFavorite
-      - Server Action: removeFavorite
-    </favorites>
-
-    <promotions>
-      - Server Action: createPromotion
-      - Server Action: updatePromotion
-      - Server Action: deletePromotion
-    </promotions>
-
-    <admin>
-      - GET /api/admin/users
-      - GET /api/admin/businesses
-      - GET /api/admin/claims
-      - GET /api/admin/reports
-      - Server Action: approveClaim
-      - Server Action: rejectClaim
-      - Server Action: verifyBusiness
-      - Server Action: unverifyBusiness
-      - Server Action: resolveReport
-    </admin>
-
-    <analytics>
-      - GET /api/business-dashboard/[businessId]/analytics
-      - Server Action: trackView
-    </analytics>
-
-    <notifications>
-      - GET /api/notifications
-      - Server Action: markAsRead
-      - Server Action: markAllAsRead
-      - Server Action: deleteNotification
-    </notifications>
-
-    <geolocation>
-      - GET /api/geo/country (IP-based country detection)
-    </geolocation>
+    <none>
+      - No API endpoints (client-side only app)
+      - All CRUD operations happen in localStorage
+    </none>
   </api_endpoints_summary>
 
   <ui_layout>
     <main_structure>
-      Clean minimal design inspired by Airbnb:
-      - Minimal fixed header with logo, search, and user menu
-      - Full-width content area
-      - Footer with country selector, links, and copyright
-      - Mobile: hamburger menu with slide-out navigation
+      Three-column horizontal layout filling the viewport.
+      Each column has a header (To Do, In Progress, Done) and a scrollable card area.
+      Add card button/input at top of To Do column or floating action button.
     </main_structure>
-
-    <key_pages>
-      - / (Homepage - discovery focused)
-      - /search (Search results with filters and map)
-      - /categories (Browse by category)
-      - /categories/[slug] (Category listing)
-      - /business/[slug] (Business detail)
-      - /events (All upcoming events)
-      - /events/[id] (Event detail)
-      - /auth/login
-      - /auth/register
-      - /dashboard (User dashboard)
-      - /dashboard/reviews (My reviews)
-      - /dashboard/favorites (My favorites)
-      - /dashboard/notifications (Notifications)
-      - /business-dashboard (Business owner dashboard)
-      - /business-dashboard/[businessId] (Specific business analytics)
-      - /admin (Admin dashboard)
-      - /admin/users
-      - /admin/businesses
-      - /admin/claims
-      - /admin/reports
-    </key_pages>
+    <card_design>
+      Simple card with title text.
+      Edit and delete icons appear on hover.
+      Subtle shadow and rounded corners.
+    </card_design>
   </ui_layout>
+
+  <design_system>
+    <design_philosophy>
+      CRITICAL: Avoid generic "AI slop" aesthetics. Create a distinctive, memorable interface.
+      - Choose a BOLD aesthetic direction: Consider brutalist/raw, retro-futuristic, soft/pastel,
+        editorial/magazine, organic/natural, or industrial/utilitarian - commit fully to the vision
+      - Make unexpected creative choices that feel intentionally designed
+      - One memorable visual element that makes the app unforgettable
+    </design_philosophy>
+    <color_palette>
+      - Do NOT use generic purple gradients on white backgrounds
+      - Do NOT use predictable, evenly-distributed palettes
+      - Choose a dominant color with sharp accents
+      - Use CSS variables for consistency
+      - Consider: moody darks, warm earth tones, bold primaries, or muted pastels
+      - Add atmosphere with gradient meshes, noise textures, or layered transparencies
+    </color_palette>
+    <typography>
+      - AVOID generic fonts: Inter, Roboto, Arial, system fonts
+      - Choose distinctive, characterful fonts that elevate the design
+      - Consider: display fonts for headers, refined body fonts
+      - Explore: geometric sans, humanist serifs, or monospace for a specific vibe
+    </typography>
+    <visual_details>
+      - Add depth with creative backgrounds (gradients, patterns, grain overlays)
+      - Use generous negative space OR controlled density - not bland in-between
+      - Consider asymmetry, overlap, or grid-breaking elements for spatial interest
+      - Subtle shadows and borders that add character
+    </visual_details>
+    <motion>
+      - Smooth drag-and-drop animations
+      - Consider: staggered reveals on load, hover states that surprise
+      - One well-orchestrated animation > scattered micro-interactions
+      - CSS-only where possible for performance
+    </motion>
+  </design_system>
 
   <implementation_steps>
     <step number="1">
-      <title>Boilerplate Cleanup</title>
+      <title>Project Setup</title>
       <tasks>
-        - Remove AI SDK and OpenRouter packages
-        - Remove chat page and AI-related components
-        - Remove AI-related API routes
-        - Clean up unused dependencies
-        - Remove unused boilerplate components
+        - Initialize Vite + React project
+        - Configure Tailwind CSS
+        - Create basic folder structure
       </tasks>
     </step>
-
     <step number="2">
-      <title>Branding and Layout</title>
+      <title>Board Layout</title>
       <tasks>
-        - Update branding to "Business Finder"
-        - Create new header component with navigation
-        - Create new footer component with country selector
-        - Implement light/dark mode toggle
-        - Set up responsive navigation
-        - Apply clean minimal Airbnb-style design
+        - Create three-column Kanban layout
+        - Style column headers with colors
+        - Add empty state placeholders
       </tasks>
     </step>
-
     <step number="3">
-      <title>Database Schema</title>
+      <title>Card CRUD</title>
       <tasks>
-        - Extend user table with platform_role
-        - Create all new tables with Drizzle
-        - Set up relationships and constraints
-        - Create materialized view for search
-        - Seed countries and categories data
-        - Seed event categories
+        - Implement add card functionality
+        - Implement edit card (inline)
+        - Implement delete card with confirmation
       </tasks>
     </step>
-
     <step number="4">
-      <title>Core Business Features</title>
+      <title>Drag and Drop</title>
       <tasks>
-        - Business listing CRUD
-        - Business detail page
-        - Category browsing (2-level)
-        - Photo upload for businesses
-        - Operating hours management
-        - Social links and contact info
+        - Implement HTML5 drag and drop
+        - Add visual feedback during drag
+        - Handle drop to update card status
       </tasks>
     </step>
-
     <step number="5">
-      <title>Search and Discovery</title>
+      <title>Persistence</title>
       <tasks>
-        - Implement PostgreSQL full-text search with materialized views
-        - Build search results page with filters
-        - Integrate Leaflet map with OpenStreetMap
-        - Implement geolocation features
-        - Country detection and selector
-        - Distance calculations
-      </tasks>
-    </step>
-
-    <step number="6">
-      <title>Reviews and Favorites</title>
-      <tasks>
-        - Review creation and management
-        - Star rating component
-        - Review photo uploads
-        - One review per business enforcement
-        - Favorites functionality
-        - Review responses for verified owners
-      </tasks>
-    </step>
-
-    <step number="7">
-      <title>Events System</title>
-      <tasks>
-        - Event CRUD for business owners
-        - Event categories
-        - RSVP functionality
-        - Events listing page
-        - Events on business pages
-        - Filter by date/category/location
-      </tasks>
-    </step>
-
-    <step number="8">
-      <title>Promotions</title>
-      <tasks>
-        - Promotion CRUD for business owners
-        - Validity date handling
-        - Display on business pages
-      </tasks>
-    </step>
-
-    <step number="9">
-      <title>User Dashboard</title>
-      <tasks>
-        - Dashboard layout
-        - My reviews management
-        - Favorites list
-        - Recently viewed
-        - My RSVPs
-      </tasks>
-    </step>
-
-    <step number="10">
-      <title>Business Owner Dashboard</title>
-      <tasks>
-        - Business owner mode toggle
-        - Analytics views and charts with Recharts
-        - Review management and responses
-        - Event management
-        - Promotion management
-        - Comprehensive metrics display
-      </tasks>
-    </step>
-
-    <step number="11">
-      <title>Business Claiming and Verification</title>
-      <tasks>
-        - Claim request flow
-        - Admin claim review
-        - Verification badge display
-        - Owner permissions enforcement
-        - Review response restriction to verified only
-      </tasks>
-    </step>
-
-    <step number="12">
-      <title>Admin Dashboard</title>
-      <tasks>
-        - Admin layout and navigation
-        - User management
-        - Business management
-        - Claim queue
-        - Report queue
-        - Platform statistics
-      </tasks>
-    </step>
-
-    <step number="13">
-      <title>Notifications and Reporting</title>
-      <tasks>
-        - In-app notification system
-        - Notification bell and list
-        - Report submission
-        - Report resolution
-      </tasks>
-    </step>
-
-    <step number="14">
-      <title>Homepage and Polish</title>
-      <tasks>
-        - Discovery-focused homepage
-        - Featured businesses section
-        - Upcoming events section
-        - Social sharing
-        - Empty states
-        - Loading states
-        - Error handling
-      </tasks>
-    </step>
-
-    <step number="15">
-      <title>Testing and Refinement</title>
-      <tasks>
-        - Responsive design testing
-        - Accessibility review
-        - Performance optimization
-        - Edge case handling
-        - Final polish
+        - Save cards to localStorage on change
+        - Load cards from localStorage on mount
+        - Handle empty/corrupted localStorage gracefully
       </tasks>
     </step>
   </implementation_steps>
 
   <success_criteria>
     <functionality>
-      - All CRUD operations work correctly
-      - Search returns relevant results with proper filtering
-      - Geolocation features work
-      - All user roles have appropriate access
-      - Events and RSVPs function properly
-      - Analytics display accurate data
-      - One review per business enforced
-      - Only verified owners can respond to reviews
+      User can add, edit, delete, and drag cards between columns.
+      All changes persist after page refresh.
     </functionality>
     <user_experience>
-      - Clean, minimal, intuitive navigation
-      - Fast page loads
-      - Responsive on all devices
-      - Clear feedback for all actions
-      - Smooth transitions
-      - Working light/dark mode
+      Smooth drag-and-drop experience.
+      Intuitive and minimal interface.
     </user_experience>
     <technical_quality>
-      - No console errors
-      - Proper error handling
-      - Secure authentication
-      - Protected routes enforced
-      - Data persists correctly
-      - No mock data
+      No console errors.
+      Fast load time (less than 1 second).
     </technical_quality>
     <design_polish>
-      - Consistent clean minimal aesthetic
-      - Professional appearance
-      - Accessible to all users
+      Clean, modern appearance.
+      Consistent colors and spacing.
     </design_polish>
   </success_criteria>
-
-  <prerequisites>
-    <environment_setup>
-      - Node.js 20+
-      - Docker (for PostgreSQL)
-      - pnpm or npm
-      - BETTER_AUTH_SECRET environment variable
-      - DATABASE_URL connection string
-    </environment_setup>
-  </prerequisites>
-
-  <additional_notes>
-    <monetization>Not implemented - all listings are free</monetization>
-    <verification>Business verification happens outside the app; admins toggle status manually</verification>
-    <internationalization>Country-based filtering only, not full i18n/localization</internationalization>
-    <email>No email integration - in-app notifications only</email>
-  </additional_notes>
 </project_specification>

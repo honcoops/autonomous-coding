@@ -20,10 +20,24 @@ fi
 
 echo "[OK] Claude CLI found"
 
-# Check if user has credentials
-CLAUDE_CREDS="$HOME/.claude/.credentials.json"
-if [ -f "$CLAUDE_CREDS" ]; then
-    echo "[OK] Claude credentials found"
+# Check if user is authenticated by testing Claude CLI
+# Try a simple command with timeout to verify authentication
+check_claude_auth() {
+    # Check if running in Claude Code remote environment (already authenticated)
+    if [ -n "$CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
+        return 0
+    fi
+
+    # Try running a simple command with timeout
+    if timeout 10 claude -p "hi" --max-budget-usd 0.01 > /dev/null 2>&1; then
+        return 0
+    fi
+
+    return 1
+}
+
+if check_claude_auth; then
+    echo "[OK] Claude authentication verified"
 else
     echo "[!] Not authenticated with Claude"
     echo ""
@@ -40,7 +54,7 @@ else
         claude login
 
         # Check if login succeeded
-        if [ -f "$CLAUDE_CREDS" ]; then
+        if check_claude_auth; then
             echo ""
             echo "[OK] Login successful!"
         else

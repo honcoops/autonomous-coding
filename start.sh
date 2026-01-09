@@ -21,15 +21,15 @@ fi
 echo "[OK] Claude CLI found"
 
 # Check if user is authenticated by testing Claude CLI
-# Try a simple command with timeout to verify authentication
 check_claude_auth() {
     # Check if running in Claude Code remote environment (already authenticated)
     if [ -n "$CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
         return 0
     fi
 
-    # Try running a simple command with timeout
-    if timeout 10 claude -p "hi" > /dev/null 2>&1; then
+    # Try running a simple command to verify authentication
+    # Note: not using timeout as it's not available on macOS by default
+    if claude -p "hi" > /dev/null 2>&1; then
         return 0
     fi
 

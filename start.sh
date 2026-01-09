@@ -21,15 +21,15 @@ fi
 echo "[OK] Claude CLI found"
 
 # Check if user is authenticated by testing Claude CLI
-# Try a simple command with timeout to verify authentication
 check_claude_auth() {
     # Check if running in Claude Code remote environment (already authenticated)
     if [ -n "$CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR" ] || [ -n "$ANTHROPIC_API_KEY" ]; then
         return 0
     fi
 
-    # Try running a simple command with timeout
-    if timeout 10 claude -p "hi" > /dev/null 2>&1; then
+    # Try running a simple command to verify authentication
+    # Note: not using timeout as it's not available on macOS by default
+    if claude -p "hi" > /dev/null 2>&1; then
         return 0
     fi
 
@@ -71,6 +71,22 @@ else
 fi
 
 echo ""
+
+# Check Python version (requires 3.10+)
+PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
+PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+
+if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]); then
+    echo "[ERROR] Python 3.10 or higher is required (found $PYTHON_VERSION)"
+    echo ""
+    echo "Please install Python 3.10+ and try again."
+    echo "  macOS: brew install python@3.12"
+    echo "  Ubuntu: sudo apt install python3.12"
+    exit 1
+fi
+
+echo "[OK] Python $PYTHON_VERSION found"
 
 # Check if venv exists, create if not
 if [ ! -d "venv" ]; then

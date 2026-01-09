@@ -29,7 +29,7 @@ check_claude_auth() {
     fi
 
     # Try running a simple command with timeout
-    if timeout 10 claude -p "hi" --max-budget-usd 0.01 > /dev/null 2>&1; then
+    if timeout 10 claude -p "hi" > /dev/null 2>&1; then
         return 0
     fi
 

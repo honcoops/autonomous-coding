@@ -23,14 +23,25 @@ if %errorlevel% neq 0 (
 
 echo [OK] Claude CLI found
 
-REM Check if user has credentials (check for ~/.claude/.credentials.json)
-set "CLAUDE_CREDS=%USERPROFILE%\.claude\.credentials.json"
-if exist "%CLAUDE_CREDS%" (
-    echo [OK] Claude credentials found
+REM Check if user is authenticated
+REM First check for environment variables that indicate authentication
+if defined CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR (
+    echo [OK] Claude authentication verified
+    goto :setup_venv
+)
+if defined ANTHROPIC_API_KEY (
+    echo [OK] Claude authentication verified
     goto :setup_venv
 )
 
-REM No credentials - prompt user to login
+REM Try running a simple command to verify authentication
+claude -p "hi" --max-budget-usd 0.01 >nul 2>nul
+if %errorlevel% equ 0 (
+    echo [OK] Claude authentication verified
+    goto :setup_venv
+)
+
+REM No authentication found - prompt user to login
 echo [!] Not authenticated with Claude
 echo.
 echo You need to run 'claude login' to authenticate.
@@ -45,8 +56,9 @@ if /i "%LOGIN_CHOICE%"=="y" (
     echo.
     call claude login
 
-    REM Check if login succeeded
-    if exist "%CLAUDE_CREDS%" (
+    REM Check if login succeeded by testing again
+    claude -p "hi" --max-budget-usd 0.01 >nul 2>nul
+    if %errorlevel% equ 0 (
         echo.
         echo [OK] Login successful!
         goto :setup_venv

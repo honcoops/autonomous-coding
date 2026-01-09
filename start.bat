@@ -35,7 +35,7 @@ if defined ANTHROPIC_API_KEY (
 )
 
 REM Try running a simple command to verify authentication
-claude -p "hi" --max-budget-usd 0.01 >nul 2>nul
+claude -p "hi" >nul 2>nul
 if %errorlevel% equ 0 (
     echo [OK] Claude authentication verified
     goto :setup_venv
@@ -57,7 +57,7 @@ if /i "%LOGIN_CHOICE%"=="y" (
     call claude login
 
     REM Check if login succeeded by testing again
-    claude -p "hi" --max-budget-usd 0.01 >nul 2>nul
+    claude -p "hi" >nul 2>nul
     if %errorlevel% equ 0 (
         echo.
         echo [OK] Login successful!

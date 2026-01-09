@@ -72,6 +72,22 @@ fi
 
 echo ""
 
+# Check Python version (requires 3.10+)
+PYTHON_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
+PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
+
+if [ "$PYTHON_MAJOR" -lt 3 ] || ([ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]); then
+    echo "[ERROR] Python 3.10 or higher is required (found $PYTHON_VERSION)"
+    echo ""
+    echo "Please install Python 3.10+ and try again."
+    echo "  macOS: brew install python@3.12"
+    echo "  Ubuntu: sudo apt install python3.12"
+    exit 1
+fi
+
+echo "[OK] Python $PYTHON_VERSION found"
+
 # Check if venv exists, create if not
 if [ ! -d "venv" ]; then
     echo "Creating virtual environment..."

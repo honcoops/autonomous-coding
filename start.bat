@@ -79,6 +79,28 @@ if /i "%LOGIN_CHOICE%"=="y" (
 :setup_venv
 echo.
 
+REM Check Python version (requires 3.10+)
+for /f "tokens=*" %%i in ('python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')"') do set PYTHON_VERSION=%%i
+for /f "tokens=1,2 delims=." %%a in ("%PYTHON_VERSION%") do (
+    set PYTHON_MAJOR=%%a
+    set PYTHON_MINOR=%%b
+)
+
+if %PYTHON_MAJOR% LSS 3 goto :python_error
+if %PYTHON_MAJOR% EQU 3 if %PYTHON_MINOR% LSS 10 goto :python_error
+echo [OK] Python %PYTHON_VERSION% found
+goto :python_ok
+
+:python_error
+echo [ERROR] Python 3.10 or higher is required (found %PYTHON_VERSION%)
+echo.
+echo Please install Python 3.10+ from https://www.python.org/downloads/
+echo.
+pause
+exit /b 1
+
+:python_ok
+
 REM Check if venv exists, create if not
 if not exist "venv\Scripts\activate.bat" (
     echo Creating virtual environment...
